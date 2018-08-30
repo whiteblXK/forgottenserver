@@ -50,7 +50,7 @@ class Container : public Item, public Cylinder
 {
 	public:
 		explicit Container(uint16_t type);
-		Container(uint16_t type, uint16_t size, bool unlocked = true, bool pagination = false);
+		Container(uint16_t type, uint16_t size, bool unlocked = true);
 		explicit Container(Tile* tile);
 		~Container();
 
@@ -101,7 +101,6 @@ class Container : public Item, public Cylinder
 			return itemlist.rend();
 		}
 
-		bool hasParent() const;
 		void addItem(Item* item);
 		Item* getItemByIndex(size_t index) const;
 		bool isHoldingItem(const Item* item) const;
@@ -111,9 +110,6 @@ class Container : public Item, public Cylinder
 
 		bool isUnlocked() const {
 			return unlocked;
-		}
-		bool hasPagination() const {
-			return pagination;
 		}
 
 		//cylinder implementations
@@ -159,7 +155,6 @@ class Container : public Item, public Cylinder
 		uint32_t serializationCount = 0;
 
 		bool unlocked;
-		bool pagination;
 
 		void onAddContainerItem(Item* item);
 		void onUpdateContainerItem(uint32_t index, Item* oldItem, Item* newItem);

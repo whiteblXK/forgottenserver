@@ -146,6 +146,7 @@ const std::unordered_map<std::string, ItemParseAttributes_t> ItemParseAttributes
 	{"walkstack", ITEM_PARSE_WALKSTACK},
 	{"blocking", ITEM_PARSE_BLOCKING},
 	{"allowdistread", ITEM_PARSE_ALLOWDISTREAD},
+	{"forceuse", ITEM_PARSE_FORCEUSE},
 };
 
 const std::unordered_map<std::string, ItemTypes_t> ItemTypesMap = {
@@ -214,8 +215,8 @@ const std::unordered_map<std::string, FluidTypes_t> FluidTypesMap = {
 
 Items::Items()
 {
-	items.reserve(30000);
-	nameToItems.reserve(30000);
+	items.reserve(20000);
+	nameToItems.reserve(20000);
 }
 
 void Items::clear()
@@ -284,12 +285,13 @@ bool Items::loadFromOtb(const std::string& file)
 		}
 	}
 
+
 	if (majorVersion == 0xFFFFFFFF) {
 		std::cout << "[Warning - Items::loadFromOtb] items.otb using generic client version." << std::endl;
 	} else if (majorVersion != 3) {
 		std::cout << "Old version detected, a newer version of items.otb is required." << std::endl;
 		return false;
-	} else if (minorVersion < CLIENT_VERSION_1098) {
+	} else if (minorVersion < CLIENT_VERSION_860) {
 		std::cout << "A newer version of items.otb is required." << std::endl;
 		return false;
 	}
@@ -330,8 +332,8 @@ bool Items::loadFromOtb(const std::string& file)
 						return false;
 					}
 
-					if (serverId > 30000 && serverId < 30100) {
-						serverId -= 30000;
+					if (serverId > 20000 && serverId < 20100) {
+						serverId -= 20000;
 					}
 					break;
 				}
@@ -458,8 +460,7 @@ bool Items::loadFromOtb(const std::string& file)
 		iType.rotatable = hasBitSet(FLAG_ROTATABLE, flags);
 		iType.canReadText = hasBitSet(FLAG_READABLE, flags);
 		iType.lookThrough = hasBitSet(FLAG_LOOKTHROUGH, flags);
-		iType.isAnimation = hasBitSet(FLAG_ANIMATION, flags);
-		// iType.walkStack = !hasBitSet(FLAG_FULLTILE, flags);
+		iType.walkStack = !hasBitSet(FLAG_FULLTILE, flags);
 		iType.forceUse = hasBitSet(FLAG_FORCEUSE, flags);
 
 		iType.id = serverId;
@@ -538,8 +539,8 @@ void Items::buildInventoryList()
 
 void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 {
-	if (id > 30000 && id < 30100) {
-		id -= 30000;
+	if (id > 20000 && id < 20100) {
+		id -= 20000;
 
 		if (id >= items.size()) {
 			items.resize(id + 1);
@@ -1294,6 +1295,11 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 
 				case ITEM_PARSE_ALLOWDISTREAD: {
 					it.allowDistRead = booleanString(valueAttribute.as_string());
+					break;
+				}
+
+				case ITEM_PARSE_FORCEUSE: {
+					it.forceUse = valueAttribute.as_bool();
 					break;
 				}
 

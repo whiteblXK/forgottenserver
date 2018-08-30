@@ -178,12 +178,6 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 		case CONDITION_ATTRIBUTES:
 			return new ConditionAttributes(id, type, ticks, buff, subId);
 
-		case CONDITION_SPELLCOOLDOWN:
-			return new ConditionSpellCooldown(id, type, ticks, buff, subId);
-
-		case CONDITION_SPELLGROUPCOOLDOWN:
-			return new ConditionSpellGroupCooldown(id, type, ticks, buff, subId);
-
 		case CONDITION_INFIGHT:
 		case CONDITION_DRUNK:
 		case CONDITION_EXHAUST_WEAPON:
@@ -758,17 +752,18 @@ bool ConditionRegeneration::executeCondition(Creature* creature, int32_t interva
 			if (player) {
 				std::string healString = std::to_string(realHealthGain) + (realHealthGain != 1 ? " hitpoints." : " hitpoint.");
 
-				TextMessage message(MESSAGE_HEALED, "You were healed for " + healString);
-				message.position = player->getPosition();
-				message.primary.value = realHealthGain;
-				message.primary.color = TEXTCOLOR_MAYABLUE;
+				TextMessage message(MESSAGE_STATUS_DEFAULT, "You were healed for " + healString);
 				player->sendTextMessage(message);
+
+				std::ostringstream strHealthGain;
+				strHealthGain << realHealthGain;
+				g_game.addAnimatedText(strHealthGain.str(), player->getPosition(), TEXTCOLOR_MAYABLUE);				
 
 				SpectatorHashSet spectators;
 				g_game.map.getSpectators(spectators, player->getPosition(), false, true);
 				spectators.erase(player);
 				if (!spectators.empty()) {
-					message.type = MESSAGE_HEALED_OTHERS;
+					message.type = MESSAGE_STATUS_DEFAULT;
 					message.text = player->getName() + " was healed for " + healString;
 					for (Creature* spectator : spectators) {
 						spectator->getPlayer()->sendTextMessage(message);
@@ -788,18 +783,19 @@ bool ConditionRegeneration::executeCondition(Creature* creature, int32_t interva
 
 			if (isBuff && realManaGain > 0) {
 				std::string manaGainString = std::to_string(realManaGain);
-
-				TextMessage message(MESSAGE_HEALED, "You gained " + manaGainString + " mana.");
-				message.position = player->getPosition();
-				message.primary.value = realManaGain;
-				message.primary.color = TEXTCOLOR_MAYABLUE;
+				
+				TextMessage message(MESSAGE_STATUS_DEFAULT, "You gained " + manaGainString + " mana.");
 				player->sendTextMessage(message);
+
+				std::ostringstream strManaGain;
+				strManaGain << realManaGain;
+				g_game.addAnimatedText(strManaGain.str(), player->getPosition(), TEXTCOLOR_MAYABLUE);
 
 				SpectatorHashSet spectators;
 				g_game.map.getSpectators(spectators, player->getPosition(), false, true);
 				spectators.erase(player);
 				if (!spectators.empty()) {
-					message.type = MESSAGE_HEALED_OTHERS;
+					message.type = MESSAGE_STATUS_DEFAULT;
 					message.text = player->getName() + " gained " + manaGainString + " mana.";
 					for (Creature* spectator : spectators) {
 						spectator->getPlayer()->sendTextMessage(message);
@@ -1273,10 +1269,6 @@ uint32_t ConditionDamage::getIcons() const
 			icons |= ICON_CURSED;
 			break;
 
-		case CONDITION_BLEEDING:
-			icons |= ICON_BLEEDING;
-			break;
-
 		default:
 			break;
 	}
@@ -1634,62 +1626,4 @@ void ConditionLight::serialize(PropWriteStream& propWriteStream)
 
 	propWriteStream.write<uint8_t>(CONDITIONATTR_LIGHTINTERVAL);
 	propWriteStream.write<uint32_t>(lightChangeInterval);
-}
-
-void ConditionSpellCooldown::addCondition(Creature* creature, const Condition* condition)
-{
-	if (updateCondition(condition)) {
-		setTicks(condition->getTicks());
-
-		if (subId != 0 && ticks > 0) {
-			Player* player = creature->getPlayer();
-			if (player) {
-				player->sendSpellCooldown(subId, ticks);
-			}
-		}
-	}
-}
-
-bool ConditionSpellCooldown::startCondition(Creature* creature)
-{
-	if (!Condition::startCondition(creature)) {
-		return false;
-	}
-
-	if (subId != 0 && ticks > 0) {
-		Player* player = creature->getPlayer();
-		if (player) {
-			player->sendSpellCooldown(subId, ticks);
-		}
-	}
-	return true;
-}
-
-void ConditionSpellGroupCooldown::addCondition(Creature* creature, const Condition* condition)
-{
-	if (updateCondition(condition)) {
-		setTicks(condition->getTicks());
-
-		if (subId != 0 && ticks > 0) {
-			Player* player = creature->getPlayer();
-			if (player) {
-				player->sendSpellGroupCooldown(static_cast<SpellGroup_t>(subId), ticks);
-			}
-		}
-	}
-}
-
-bool ConditionSpellGroupCooldown::startCondition(Creature* creature)
-{
-	if (!Condition::startCondition(creature)) {
-		return false;
-	}
-
-	if (subId != 0 && ticks > 0) {
-		Player* player = creature->getPlayer();
-		if (player) {
-			player->sendSpellGroupCooldown(static_cast<SpellGroup_t>(subId), ticks);
-		}
-	}
-	return true;
 }

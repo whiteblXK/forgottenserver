@@ -1,7 +1,3 @@
-function Player:onBrowseField(position)
-	return true
-end
-
 function Player:onLook(thing, position, distance)
 	local description = "You see " .. thing:getDescription(distance)
 	if self:getGroup():getAccess() then
@@ -161,7 +157,7 @@ function Player:onReportRuleViolation(targetName, reportType, reportReason, comm
 	return
 end
 
-function Player:onReportBug(message, position, category)
+function Player:onReportBug(message)
 	if self:getAccountType() == ACCOUNT_TYPE_NORMAL then
 		return false
 	end
@@ -177,9 +173,7 @@ function Player:onReportBug(message, position, category)
 	io.output(file)
 	io.write("------------------------------\n")
 	io.write("Name: " .. name)
-	if category == BUG_CATEGORY_MAP then
-		io.write(" [Map position: " .. position.x .. ", " .. position.y .. ", " .. position.z .. "]")
-	end
+	
 	local playerPosition = self:getPosition()
 	io.write(" [Player Position: " .. playerPosition.x .. ", " .. playerPosition.y .. ", " .. playerPosition.z .. "]\n")
 	io.write("Comment: " .. message .. "\n")

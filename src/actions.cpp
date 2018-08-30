@@ -287,10 +287,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 			return RETURNVALUE_CANNOTUSETHISOBJECT;
 		}
 
-		if (bed->trySleep(player)) {
-			player->setBedItem(bed);
-			g_game.sendOfflineTrainingDialog(player);
-		}
+		bed->sleep(player);
 
 		return RETURNVALUE_NOERROR;
 	}
@@ -301,7 +298,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 		//depot container
 		if (DepotLocker* depot = container->getDepotLocker()) {
 			DepotLocker* myDepotLocker = player->getDepotLocker(depot->getDepotId());
-			myDepotLocker->setParent(depot->getParent()->getTile());
+			myDepotLocker->setParent(depot->getParent());
 			openContainer = myDepotLocker;
 			player->setLastDepotId(depot->getDepotId());
 		} else {
@@ -428,30 +425,8 @@ bool Action::configureEvent(const pugi::xml_node& node)
 	return true;
 }
 
-namespace {
-
-bool enterMarket(Player* player, Item*, const Position&, Thing*, const Position&, bool)
+bool Action::loadFunction(const pugi::xml_attribute&)
 {
-	if (player->getLastDepotId() == -1) {
-		return false;
-	}
-
-	player->sendMarketEnter(player->getLastDepotId());
-	return true;
-}
-
-}
-
-bool Action::loadFunction(const pugi::xml_attribute& attr)
-{
-	const char* functionName = attr.as_string();
-	if (strcasecmp(functionName, "market") == 0) {
-		function = enterMarket;
-	} else {
-		std::cout << "[Warning - Action::loadFunction] Function \"" << functionName << "\" does not exist." << std::endl;
-		return false;
-	}
-
 	scripted = false;
 	return true;
 }

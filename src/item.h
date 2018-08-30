@@ -884,6 +884,10 @@ class Item : virtual public Thing
 			return items[id].walkStack;
 		}
 
+		bool isForceUse() const {
+			return items[id].forceUse;
+		}
+
 		const std::string& getName() const {
 			if (hasAttribute(ITEM_ATTRIBUTE_NAME)) {
 				return getStrAttr(ITEM_ATTRIBUTE_NAME);
@@ -956,8 +960,6 @@ class Item : virtual public Thing
 		bool isCleanable() const {
 			return !loadedFromMap && canRemove() && isPickupable() && !hasAttribute(ITEM_ATTRIBUTE_UNIQUEID) && !hasAttribute(ITEM_ATTRIBUTE_ACTIONID);
 		}
-
-		bool hasMarketAttributes() const;
 
 		std::unique_ptr<ItemAttributes>& getAttributes() {
 			if (!attributes) {

@@ -86,7 +86,7 @@ bool IOLoginData::loginserverAuthentication(const std::string& name, const std::
 	Database& db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "SELECT `id`, `name`, `password`, `secret`, `type`, `premdays`, `lastday` FROM `accounts` WHERE `name` = " << db.escapeString(name);
+	query << "SELECT `id`, `name`, `password`, `type`, `premdays`, `lastday` FROM `accounts` WHERE `name` = " << db.escapeString(name);
 	DBResult_ptr result = db.storeQuery(query.str());
 	if (!result) {
 		return false;
@@ -98,7 +98,6 @@ bool IOLoginData::loginserverAuthentication(const std::string& name, const std::
 
 	account.id = result->getNumber<uint32_t>("id");
 	account.name = result->getString("name");
-	account.key = decodeSecret(result->getString("secret"));
 	account.accountType = static_cast<AccountType_t>(result->getNumber<int32_t>("type"));
 	account.premiumDays = result->getNumber<uint16_t>("premdays");
 	account.lastDay = result->getNumber<time_t>("lastday");
@@ -117,27 +116,15 @@ bool IOLoginData::loginserverAuthentication(const std::string& name, const std::
 	return true;
 }
 
-uint32_t IOLoginData::gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName, std::string& token, uint32_t tokenTime)
+uint32_t IOLoginData::gameworldAuthentication(const std::string& accountName, const std::string& password, std::string& characterName)
 {
 	Database& db = Database::getInstance();
 
 	std::ostringstream query;
-	query << "SELECT `id`, `password`, `secret` FROM `accounts` WHERE `name` = " << db.escapeString(accountName);
+	query << "SELECT `id`, `password` FROM `accounts` WHERE `name` = " << db.escapeString(accountName);
 	DBResult_ptr result = db.storeQuery(query.str());
 	if (!result) {
 		return 0;
-	}
-
-	std::string secret = decodeSecret(result->getString("secret"));
-	if (!secret.empty()) {
-		if (token.empty()) {
-			return 0;
-		}
-
-		bool tokenValid = token == generateToken(secret, tokenTime) || token == generateToken(secret, tokenTime - 1) || token == generateToken(secret, tokenTime + 1);
-		if (!tokenValid) {
-			return 0;
-		}
 	}
 
 	if (transformToSHA1(password) != result->getString("password")) {
@@ -462,7 +449,7 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 			const std::pair<Item*, int32_t>& pair = it->second;
 			Item* item = pair.first;
 			int32_t pid = pair.second;
-			if (pid >= 1 && pid <= 10) {
+			if (pid >= 1 && pid <= 10) {			
 				player->internalAddThing(pid, item);
 			} else {
 				ItemMap::const_iterator it2 = itemMap.find(pid);
@@ -524,7 +511,10 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 			int32_t pid = pair.second;
 
 			if (pid >= 0 && pid < 100) {
-				player->getInbox()->internalAddThing(item);
+				DepotLocker* depotLocker = player->getDepotLocker(pid);
+				if (depotLocker) {
+					depotLocker->internalAddThing(item);
+				}					
 			} else {
 				ItemMap::const_iterator it2 = itemMap.find(pid);
 
@@ -826,8 +816,13 @@ bool IOLoginData::savePlayer(Player* player)
 	DBInsert inboxQuery("INSERT INTO `player_inboxitems` (`player_id`, `pid`, `sid`, `itemtype`, `count`, `attributes`) VALUES ");
 	itemList.clear();
 
-	for (Item* item : player->getInbox()->getItemList()) {
-		itemList.emplace_back(0, item);
+	for (const auto& it : player->depotLockerMap) {
+		DepotLocker* depotLocker = it.second;
+		for (Item* item : depotLocker->getItemList()) {
+			if (item->getID() != ITEM_DEPOT) {
+				itemList.emplace_back(it.first, item);
+			}
+		}
 	}
 
 	if (!saveItems(player, itemList, inboxQuery, propWriteStream)) {

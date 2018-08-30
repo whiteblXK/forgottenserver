@@ -14,6 +14,10 @@ speed:setParameter(CONDITION_PARAM_TICKS, 10000)
 speed:setFormula(-0.7, 56, -0.7, 56)
 combat:addCondition(speed)
 
+local pacified = Condition(CONDITION_PACIFIED)
+pacified:setParameter(CONDITION_PARAM_TICKS, 10000)
+combat:addCondition(pacified)
+
 function onCastSpell(creature, variant)
 	return combat:execute(creature, variant)
 end
