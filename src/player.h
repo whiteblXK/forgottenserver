@@ -796,11 +796,6 @@ class Player final : public Creature, public Cylinder
 				client->sendInventoryItem(slot, item);
 			}
 		}
-		void sendItems() {
-			if (client) {
-				client->sendItems();
-			}
-		}
 
 		//event methods
 		void onUpdateTileItem(const Tile* tile, const Position& pos, const Item* oldItem,
